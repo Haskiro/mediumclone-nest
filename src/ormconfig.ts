@@ -1,12 +1,15 @@
 import { ConnectionOptions } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 
-const config: ConnectionOptions = {
+export const getOrmConfig = (
+  configService: ConfigService,
+): ConnectionOptions => ({
   type: 'postgres',
-  host: 'localhost',
-  port: 5432,
-  username: 'mediumclone',
-  password: 'mediumclone',
-  database: 'mediumclone',
-};
-
-export default config;
+  host: configService.get<string>('DB_HOST'),
+  port: parseInt(configService.get<string>('DB_PORT')),
+  username: configService.get<string>('DB_USERNAME'),
+  password: configService.get<string>('DB_PASSWORD'),
+  database: configService.get<string>('DB_NAME'),
+  entities: [__dirname + '/**/*.entity{.ts,.js}'],
+  synchronize: true,
+});
