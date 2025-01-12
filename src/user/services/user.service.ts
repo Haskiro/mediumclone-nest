@@ -12,6 +12,7 @@ import {
   ExistUserException,
   IncorrectCredentialsException,
 } from '@app/exceptions';
+import { UpdateUserDto } from '@app/user/dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -30,16 +31,10 @@ export class UserService {
 
     if (existUser) throw new ExistUserException();
 
-    const hashedPassword = await hash(
-      createUserDto.password,
-      parseInt(this.configService.get<string>('SALT_ROUNDS')),
+    const newUser = await this.updateUserInstanceWithHashingPassword(
+      new UserEntity(),
+      createUserDto,
     );
-
-    const newUser = new UserEntity();
-    Object.assign(newUser, {
-      ...createUserDto,
-      password: hashedPassword,
-    });
 
     return await this.userRepository.save(newUser);
   }
@@ -62,6 +57,15 @@ export class UserService {
     }
 
     throw new IncorrectCredentialsException();
+  }
+
+  async updateUser(currentUser: UserEntity, updateUserDto: UpdateUserDto) {
+    const updatedUser = await this.updateUserInstanceWithHashingPassword(
+      currentUser,
+      updateUserDto,
+    );
+
+    return await this.userRepository.save(updatedUser);
   }
 
   async findById(id: number): Promise<UserEntity> {
@@ -90,5 +94,23 @@ export class UserService {
         token: this.generateJwt(user),
       },
     };
+  }
+
+  async updateUserInstanceWithHashingPassword(
+    currentUser: UserEntity,
+    newValues: Partial<UserEntity>,
+  ): Promise<UserEntity> {
+    if (newValues.password) {
+      const hashedPassword = await hash(
+        newValues.password,
+        parseInt(this.configService.get<string>('SALT_ROUNDS')),
+      );
+
+      newValues.password = hashedPassword;
+    }
+
+    Object.assign(currentUser, newValues);
+
+    return currentUser;
   }
 }
