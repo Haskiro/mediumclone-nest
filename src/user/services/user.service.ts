@@ -8,7 +8,10 @@ import { UserEntity } from '@app/user/entities/user.entity';
 import { sign } from 'jsonwebtoken';
 import { IUserResponse } from '@app/user/types/user-response.interface';
 import { LoginUserDto } from '@app/user/dto/login-user.dto';
-import { UserExceptionsService } from '@app/user/services/user-exceptions.service';
+import {
+  ExistUserException,
+  IncorrectCredentialsException,
+} from '@app/exceptions';
 
 @Injectable()
 export class UserService {
@@ -16,7 +19,6 @@ export class UserService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly configService: ConfigService,
-    private readonly userExceptionsService: UserExceptionsService,
   ) {}
   async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
     const existUser = await this.userRepository.findOne({
@@ -26,7 +28,7 @@ export class UserService {
       ],
     });
 
-    if (existUser) this.userExceptionsService.throwExistUserException();
+    if (existUser) throw new ExistUserException();
 
     const hashedPassword = await hash(
       createUserDto.password,
@@ -59,7 +61,7 @@ export class UserService {
       if (isPasswordCorrect) return foundUser;
     }
 
-    this.userExceptionsService.throwIncorrectCredentialsException();
+    throw new IncorrectCredentialsException();
   }
 
   async findById(id: number): Promise<UserEntity> {
