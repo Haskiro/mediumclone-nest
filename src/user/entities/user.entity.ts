@@ -27,6 +27,8 @@ export class UserEntity {
   })
   image: string;
 
-  @Column()
+  @Column({
+    select: false,
+  })
   password: string;
 }

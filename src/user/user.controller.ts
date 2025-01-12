@@ -1,20 +1,34 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { UserService } from '@app/user/user.service';
+import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { UserService } from '@app/user/services/user.service';
 import { CreateUserDto } from '@app/user/dto/create-user.dto';
-import { UserEntity } from '@app/user/entities/user.entity';
+import { IUserResponse } from '@app/user/types/user-response.interface';
+import { LoginUserDto } from '@app/user/dto/login-user.dto';
+import { Request } from 'express';
 
 @Controller()
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('users')
-  async createUser(@Body('user') createUserDto: CreateUserDto): Promise<{
-    user: UserEntity;
-  }> {
-    const createUserResult = await this.userService.createUser(createUserDto);
+  async createUser(
+    @Body('user') createUserDto: CreateUserDto,
+  ): Promise<IUserResponse> {
+    const user = await this.userService.createUser(createUserDto);
 
-    return {
-      user: createUserResult,
-    };
+    return this.userService.buildUserResponse(user);
+  }
+
+  @Post('users/login')
+  async loginUser(
+    @Body('user') loginUserDto: LoginUserDto,
+  ): Promise<IUserResponse> {
+    const user = await this.userService.loginUser(loginUserDto);
+
+    return this.userService.buildUserResponse(user);
+  }
+
+  @Get('user')
+  async getCurrentUser(@Req() request: Request): Promise<IUserResponse> {
+    return this.userService.buildUserResponse(request.user);
   }
 }
