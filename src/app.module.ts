@@ -3,19 +3,16 @@ import { AppController } from '@app/app.controller';
 import { AppService } from '@app/app.service';
 import { TagModule } from '@app/tag/tag.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { getOrmConfig } from '@app/ormconfig';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { ENV_FILE_PATHS } from '@app/shared/constants/env-file-paths';
+import { dataSourceOptions } from '@app/datasource';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: ['.env.local', '.env'],
+      envFilePath: ENV_FILE_PATHS,
     }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: getOrmConfig,
-    }),
+    TypeOrmModule.forRoot(dataSourceOptions),
     TagModule,
   ],
   controllers: [AppController],

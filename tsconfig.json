@@ -19,6 +19,11 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@app/*": ["./src/*"]
-    }
+    },
+  },
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ]
   }
 }
