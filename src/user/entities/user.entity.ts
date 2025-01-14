@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { ArticleEntity } from '@app/article/entities/article.entity';
 
 @Entity({
   name: 'users',
@@ -31,4 +32,9 @@ export class UserEntity {
     select: false,
   })
   password: string;
+
+  @OneToMany(() => ArticleEntity, (article) => article.author, {
+    onDelete: 'SET NULL',
+  })
+  articles: ArticleEntity[];
 }

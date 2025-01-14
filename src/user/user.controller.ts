@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Put, UseGuards } from '@nestjs/common';
-import { UserService } from '@app/user/services/user.service';
+import { UserService } from '@app/user/user.service';
 import { CreateUserDto } from '@app/user/dto/create-user.dto';
 import { IUserResponse } from '@app/user/types/user-response.interface';
 import { LoginUserDto } from '@app/user/dto/login-user.dto';

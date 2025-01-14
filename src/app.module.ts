@@ -8,6 +8,7 @@ import { ENV_FILE_PATHS } from '@app/shared/constants/env-file-paths';
 import { dataSourceOptions } from '@app/datasource';
 import { UserModule } from './user/user.module';
 import { AuthMiddleware } from '@app/user/middlewares/auth.middleware';
+import { ArticleModule } from '@app/article/article.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AuthMiddleware } from '@app/user/middlewares/auth.middleware';
     TypeOrmModule.forRoot(dataSourceOptions),
     TagModule,
     UserModule,
+    ArticleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

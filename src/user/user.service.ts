@@ -21,6 +21,7 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
     private readonly configService: ConfigService,
   ) {}
+
   async createUser(createUserDto: CreateUserDto): Promise<UserEntity> {
     const existUser = await this.userRepository.findOne({
       where: [
@@ -69,8 +70,8 @@ export class UserService {
   }
 
   async findById(id: number): Promise<UserEntity> {
-    return await this.userRepository.findOne({
-      where: { id },
+    return await this.userRepository.findOneBy({
+      id,
     });
   }
 
