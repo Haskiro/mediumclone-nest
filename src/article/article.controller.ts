@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
 import { CreateArticleDto } from '@app/article/dto/create-article.dto';
 import { ArticleService } from '@app/article/article.service';
 import { AuthGuard } from '@app/user/guards/auth.guard';
 import { User } from '@app/user/decorators/user.decorator';
 import { UserEntity } from '@app/user/entities/user.entity';
 import { IArticleResponse } from '@app/article/types/article-response.interface';
+import { DeleteResult } from "typeorm";
 
 @Controller('articles')
 export class ArticleController {
@@ -29,5 +30,11 @@ export class ArticleController {
     const article = await this.articleService.findBySlug(slug);
 
     return this.articleService.buildArticleResponse(article);
+  }
+
+  @Delete('/:slug')
+  @UseGuards(AuthGuard)
+  async delete(@User('id') currentUserId: number, @Param('slug') slug: string): Promise<DeleteResult> {
+    return await this.articleService.delete(slug, currentUserId);
   }
 }
