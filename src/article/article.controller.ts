@@ -1,11 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Post, UseGuards } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { CreateArticleDto } from '@app/article/dto/create-article.dto';
 import { ArticleService } from '@app/article/article.service';
 import { AuthGuard } from '@app/user/guards/auth.guard';
 import { User } from '@app/user/decorators/user.decorator';
 import { UserEntity } from '@app/user/entities/user.entity';
 import { IArticleResponse } from '@app/article/types/article-response.interface';
-import { DeleteResult } from "typeorm";
+import { DeleteResult } from 'typeorm';
+import { IsAuthorGuard } from '@app/article/guards/is-author.guard';
+import { UpdateArticleDto } from '@app/article/dto/update-article.dto';
 
 @Controller('articles')
 export class ArticleController {
@@ -33,8 +44,22 @@ export class ArticleController {
   }
 
   @Delete('/:slug')
-  @UseGuards(AuthGuard)
-  async delete(@User('id') currentUserId: number, @Param('slug') slug: string): Promise<DeleteResult> {
-    return await this.articleService.delete(slug, currentUserId);
+  @UseGuards(AuthGuard, IsAuthorGuard)
+  async delete(@Param('slug') slug: string): Promise<DeleteResult> {
+    return await this.articleService.delete(slug);
+  }
+
+  @Put('/:slug')
+  @UseGuards(AuthGuard, IsAuthorGuard)
+  async update(
+    @Param('slug') slug: string,
+    @Body('article') updateArticleDto: UpdateArticleDto,
+  ): Promise<IArticleResponse> {
+    const updatedArticle = await this.articleService.update(
+      slug,
+      updateArticleDto,
+    );
+
+    return this.articleService.buildArticleResponse(updatedArticle);
   }
 }

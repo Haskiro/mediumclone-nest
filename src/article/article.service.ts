@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateArticleDto } from '@app/article/dto/create-article.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ArticleEntity } from '@app/article/entities/article.entity';
@@ -10,6 +6,7 @@ import { DeleteResult, Repository } from 'typeorm';
 import { UserEntity } from '@app/user/entities/user.entity';
 import slugify from 'slugify';
 import { IArticleResponse } from '@app/article/types/article-response.interface';
+import { UpdateArticleDto } from '@app/article/dto/update-article.dto';
 
 @Injectable()
 export class ArticleService {
@@ -44,16 +41,27 @@ export class ArticleService {
     return article;
   }
 
-  async delete(slug: string, currentUserId: number): Promise<DeleteResult> {
-    const article = await this.findBySlug(slug);
-
-    if (article.author.id !== currentUserId) {
-      throw new ForbiddenException(
-        "You can't delete this article. You're not the author",
-      );
-    }
-
+  async delete(slug: string): Promise<DeleteResult> {
     return await this.articleRepository.delete({ slug });
+  }
+
+  async update(
+    slug: string,
+    updateArticleDto: UpdateArticleDto,
+  ): Promise<ArticleEntity> {
+    const article = await this.findBySlug(slug);
+    const isTitleChanged =
+      updateArticleDto.title && updateArticleDto.title !== article.title;
+
+    const updatedArticleSlug = isTitleChanged
+      ? this.generateSlug(updateArticleDto.title)
+      : article.slug;
+
+    return this.articleRepository.save({
+      ...article,
+      ...updateArticleDto,
+      slug: updatedArticleSlug,
+    });
   }
 
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
