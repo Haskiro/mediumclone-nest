@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { CreateArticleDto } from '@app/article/dto/create-article.dto';
@@ -13,14 +14,26 @@ import { ArticleService } from '@app/article/article.service';
 import { AuthGuard } from '@app/user/guards/auth.guard';
 import { User } from '@app/user/decorators/user.decorator';
 import { UserEntity } from '@app/user/entities/user.entity';
-import { IArticleResponse } from '@app/article/types/article-response.interface';
+import {
+  IArticleResponse,
+  IArticlesListResponse,
+} from '@app/article/types/responses.interface';
 import { DeleteResult } from 'typeorm';
 import { IsAuthorGuard } from '@app/article/guards/is-author.guard';
 import { UpdateArticleDto } from '@app/article/dto/update-article.dto';
+import { IGetArticlesQueryParams } from '@app/article/types/get-articles-query-params.interface';
 
 @Controller('articles')
 export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
+
+  @Get()
+  async findAll(
+    @User('id') currentUserId: number,
+    @Query() query: IGetArticlesQueryParams,
+  ): Promise<IArticlesListResponse> {
+    return await this.articleService.findAll(currentUserId, query);
+  }
 
   @Post()
   @UseGuards(AuthGuard)
@@ -61,5 +74,19 @@ export class ArticleController {
     );
 
     return this.articleService.buildArticleResponse(updatedArticle);
+  }
+
+  @Post('/:slug/favorite')
+  @UseGuards(AuthGuard)
+  async favoriteArticle(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+  ): Promise<IArticleResponse> {
+    const article = await this.articleService.favoriteArticle(
+      currentUserId,
+      slug,
+    );
+
+    return this.articleService.buildArticleResponse(article);
   }
 }

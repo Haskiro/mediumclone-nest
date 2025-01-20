@@ -1,4 +1,4 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { ArticleEntity } from '@app/article/entities/article.entity';
 
 @Entity({
@@ -37,4 +37,8 @@ export class UserEntity {
     onDelete: 'SET NULL',
   })
   articles: ArticleEntity[];
+
+  @ManyToMany(() => ArticleEntity)
+  @JoinTable()
+  favorites: ArticleEntity[];
 }

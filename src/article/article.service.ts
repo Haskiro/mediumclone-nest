@@ -5,15 +5,53 @@ import { ArticleEntity } from '@app/article/entities/article.entity';
 import { DeleteResult, Repository } from 'typeorm';
 import { UserEntity } from '@app/user/entities/user.entity';
 import slugify from 'slugify';
-import { IArticleResponse } from '@app/article/types/article-response.interface';
+import {
+  IArticleResponse,
+  IArticlesListResponse,
+} from '@app/article/types/responses.interface';
 import { UpdateArticleDto } from '@app/article/dto/update-article.dto';
+import { IGetArticlesQueryParams } from '@app/article/types/get-articles-query-params.interface';
 
 @Injectable()
 export class ArticleService {
   constructor(
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
   ) {}
+
+  async findAll(
+    currentUserId: number,
+    query: IGetArticlesQueryParams,
+  ): Promise<IArticlesListResponse> {
+    const queryBuilder = this.articleRepository
+      .createQueryBuilder('articles')
+      .leftJoinAndSelect('articles.author', 'author')
+      .orderBy('articles.createdAt', 'DESC');
+
+    queryBuilder.limit(query.limit || 20).offset(query.offset || 0);
+
+    if (query.author) {
+      queryBuilder.andWhere('LOWER(author.username) LIKE LOWER(:name)', {
+        name: `%${query.author}%`,
+      });
+    }
+
+    if (query.tag) {
+      queryBuilder.andWhere('LOWER(articles.tagList) LIKE LOWER(:tag)', {
+        tag: `%${query.tag}%`,
+      });
+    }
+
+    const articles = await queryBuilder.getMany();
+    const articlesCount = await queryBuilder.getCount();
+
+    return {
+      articles,
+      articlesCount,
+    };
+  }
   async create(
     createArticleDto: CreateArticleDto,
     author: UserEntity,
@@ -62,6 +100,33 @@ export class ArticleService {
       ...updateArticleDto,
       slug: updatedArticleSlug,
     });
+  }
+
+  async favoriteArticle(
+    currentUserId: number,
+    slug: string,
+  ): Promise<ArticleEntity> {
+    const article = await this.findBySlug(slug);
+    const user = await this.userRepository.findOne({
+      where: {
+        id: currentUserId,
+      },
+      relations: ['favorites'],
+    });
+
+    const isNotFavorited = !user.favorites.find(
+      (favoriteArticles) => favoriteArticles.id === article.id,
+    );
+
+    if (isNotFavorited) {
+      user.favorites.push(article);
+      article.favoritesCount += 1;
+
+      await this.userRepository.save(user);
+      await this.articleRepository.save(article);
+    }
+
+    return article;
   }
 
   buildArticleResponse(article: ArticleEntity): IArticleResponse {
