@@ -1,7 +1,7 @@
 import { ArticleEntity } from '@app/article/entities/article.entity';
 
 export interface IArticleResponse {
-  article: ArticleEntity;
+  article: Omit<ArticleEntity, 'favorited'> & { favorited: boolean };
 }
 
 export interface IArticlesListResponse {

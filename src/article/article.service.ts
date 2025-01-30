@@ -11,6 +11,7 @@ import {
 } from '@app/article/types/responses.interface';
 import { UpdateArticleDto } from '@app/article/dto/update-article.dto';
 import { IGetArticlesQueryParams } from '@app/article/types/get-articles-query-params.interface';
+import { IReactArticleParams } from '@app/article/types/react-article-params.interface';
 
 @Injectable()
 export class ArticleService {
@@ -22,15 +23,13 @@ export class ArticleService {
   ) {}
 
   async findAll(
-    currentUserId: number,
     query: IGetArticlesQueryParams,
   ): Promise<IArticlesListResponse> {
     const queryBuilder = this.articleRepository
       .createQueryBuilder('articles')
       .leftJoinAndSelect('articles.author', 'author')
+      .leftJoin('articles.favorited', 'favorited')
       .orderBy('articles.createdAt', 'DESC');
-
-    queryBuilder.limit(query.limit || 20).offset(query.offset || 0);
 
     if (query.author) {
       queryBuilder.andWhere('LOWER(author.username) LIKE LOWER(:name)', {
@@ -43,6 +42,14 @@ export class ArticleService {
         tag: `%${query.tag}%`,
       });
     }
+
+    if (query.favorited) {
+      queryBuilder.andWhere('LOWER(favorited.username) LIKE LOWER(:name)', {
+        name: `%${query.favorited}%`,
+      });
+    }
+
+    queryBuilder.limit(query.limit || 20).offset(query.offset || 0);
 
     const articles = await queryBuilder.getMany();
     const articlesCount = await queryBuilder.getCount();
@@ -102,10 +109,11 @@ export class ArticleService {
     });
   }
 
-  async favoriteArticle(
-    currentUserId: number,
-    slug: string,
-  ): Promise<ArticleEntity> {
+  async reactArticle({
+    currentUserId,
+    slug,
+    action,
+  }: IReactArticleParams): Promise<ArticleEntity> {
     const article = await this.findBySlug(slug);
     const user = await this.userRepository.findOne({
       where: {
@@ -114,24 +122,48 @@ export class ArticleService {
       relations: ['favorites'],
     });
 
-    const isNotFavorited = !user.favorites.find(
+    const articleIdx = user.favorites.findIndex(
       (favoriteArticles) => favoriteArticles.id === article.id,
     );
 
-    if (isNotFavorited) {
+    if (action === 'like' && articleIdx === -1) {
       user.favorites.push(article);
       article.favoritesCount += 1;
 
+      await this.userRepository.save(user); // данные по article тоже обновятся, благодаря опции cascade: true
+    } else if (action === 'dislike' && articleIdx !== -1) {
+      user.favorites.splice(articleIdx, 1);
+      article.favoritesCount -= 1;
+
       await this.userRepository.save(user);
-      await this.articleRepository.save(article);
+      await this.articleRepository.save(article); // здесь cascade уже не поможет
     }
 
     return article;
   }
 
-  buildArticleResponse(article: ArticleEntity): IArticleResponse {
+  async buildArticleResponse(
+    article: ArticleEntity,
+    currentUserId: number | null,
+  ): Promise<IArticleResponse> {
+    const articleWithFavorited = await this.articleRepository.findOne({
+      where: {
+        id: article.id,
+      },
+      relations: {
+        favorited: true,
+      },
+    });
+
+    const favorited =
+      !!currentUserId &&
+      !!articleWithFavorited.favorited.find((user) => user.id === currentUserId);
+
     return {
-      article,
+      article: {
+        ...article,
+        favorited,
+      },
     };
   }
 

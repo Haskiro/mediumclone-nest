@@ -29,10 +29,9 @@ export class ArticleController {
 
   @Get()
   async findAll(
-    @User('id') currentUserId: number,
     @Query() query: IGetArticlesQueryParams,
   ): Promise<IArticlesListResponse> {
-    return await this.articleService.findAll(currentUserId, query);
+    return await this.articleService.findAll(query);
   }
 
   @Post()
@@ -46,14 +45,23 @@ export class ArticleController {
       currentUser,
     );
 
-    return this.articleService.buildArticleResponse(newArticle);
+    return await this.articleService.buildArticleResponse(
+      newArticle,
+      currentUser.id,
+    );
   }
 
   @Get('/:slug')
-  async findBySlug(@Param('slug') slug: string): Promise<IArticleResponse> {
+  async findBySlug(
+    @User('id') currentUserId: number | null,
+    @Param('slug') slug: string,
+  ): Promise<IArticleResponse> {
     const article = await this.articleService.findBySlug(slug);
 
-    return this.articleService.buildArticleResponse(article);
+    return await this.articleService.buildArticleResponse(
+      article,
+      currentUserId,
+    );
   }
 
   @Delete('/:slug')
@@ -65,6 +73,7 @@ export class ArticleController {
   @Put('/:slug')
   @UseGuards(AuthGuard, IsAuthorGuard)
   async update(
+    @User('id') currentUserId: number,
     @Param('slug') slug: string,
     @Body('article') updateArticleDto: UpdateArticleDto,
   ): Promise<IArticleResponse> {
@@ -73,7 +82,10 @@ export class ArticleController {
       updateArticleDto,
     );
 
-    return this.articleService.buildArticleResponse(updatedArticle);
+    return this.articleService.buildArticleResponse(
+      updatedArticle,
+      currentUserId,
+    );
   }
 
   @Post('/:slug/favorite')
@@ -82,11 +94,33 @@ export class ArticleController {
     @User('id') currentUserId: number,
     @Param('slug') slug: string,
   ): Promise<IArticleResponse> {
-    const article = await this.articleService.favoriteArticle(
+    const article = await this.articleService.reactArticle({
+      action: 'like',
       currentUserId,
       slug,
-    );
+    });
 
-    return this.articleService.buildArticleResponse(article);
+    return await this.articleService.buildArticleResponse(
+      article,
+      currentUserId,
+    );
+  }
+
+  @Delete('/:slug/favorite')
+  @UseGuards(AuthGuard)
+  async dislikeArticle(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+  ): Promise<IArticleResponse> {
+    const article = await this.articleService.reactArticle({
+      action: 'dislike',
+      currentUserId,
+      slug,
+    });
+
+    return await this.articleService.buildArticleResponse(
+      article,
+      currentUserId,
+    );
   }
 }

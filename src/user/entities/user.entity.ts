@@ -1,4 +1,11 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { ArticleEntity } from '@app/article/entities/article.entity';
 
 @Entity({
@@ -38,7 +45,9 @@ export class UserEntity {
   })
   articles: ArticleEntity[];
 
-  @ManyToMany(() => ArticleEntity)
+  @ManyToMany(() => ArticleEntity, (article) => article.favorited, {
+    cascade: true,
+  })
   @JoinTable()
   favorites: ArticleEntity[];
 }

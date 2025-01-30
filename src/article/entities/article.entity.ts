@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -46,4 +47,7 @@ export class ArticleEntity {
     eager: true,
   })
   author: UserEntity;
+
+  @ManyToMany(() => UserEntity, (user) => user.favorites)
+  favorited: UserEntity[];
 }
