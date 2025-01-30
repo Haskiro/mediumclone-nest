@@ -157,7 +157,9 @@ export class ArticleService {
 
     const favorited =
       !!currentUserId &&
-      !!articleWithFavorited.favorited.find((user) => user.id === currentUserId);
+      !!articleWithFavorited.favorited.find(
+        (user) => user.id === currentUserId,
+      );
 
     return {
       article: {
